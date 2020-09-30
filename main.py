@@ -159,7 +159,7 @@ class AtlasAnnotationTool(QWidget):
         except Exception as e:
             self.writeMessage(str(e))
         self.writeMessage("Selected Points is cleared")
-        # added in AtlasAnnotationTool.clearSelected
+        # handled in AtlasAnnotationTool.clearSelected
         # self.selected_points_id = []
         # clear selected points
         self.clearSelected()
@@ -172,7 +172,7 @@ class AtlasAnnotationTool(QWidget):
         '''
         # self.writeMessage("Selected Segmentation Cancelled".format(len(self.selected_points_id)))
         self.writeMessage("Selected Segmenation Cancelled")
-        # added in AtlasAnnotationTool.clearSelected
+        # handled in AtlasAnnotationTool.clearSelected
         # self.selected_points_id = []
         self.current_result_point_indices = []
         self.lowerScene.clear()
@@ -211,6 +211,7 @@ class AtlasAnnotationTool(QWidget):
                 removed_id = seg.id
 
         ### DEBUGGING ###
+
         # print("NAMES:", [s.segment_name for s in self.segmentations])
         # print("IDS:", [s.id for s in self.segmentations])
 
@@ -313,17 +314,17 @@ class AtlasAnnotationTool(QWidget):
                 try:
                     points[idx]
                     if idx not in self.selected:
-                        self.selected_points_id.append(idx)  # TODO how to you not add a point if it is index out of range
+                        self.selected_points_id.append(idx)
                         # p1.set_data(points, edge_color=colors, face_color=colors, size=2)
                         
-                        # save the original color of the point (https://numpy.org/doc/stable/reference/generated/numpy.ndarray.copy.html)
-                        # need a copy
+                        # save the original color of the point in a copy (https://numpy.org/doc/stable/reference/generated/numpy.ndarray.copy.html)
                         self.selected[idx] = np.ndarray.copy(colors[idx])
+
                         # set the selected point's color to red
                         colors[idx] = (1, 0, 0)
+                        
                         self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
                         self.upperScene.canvas.update()
-
                         self.writeMessage("Selected Points: {}".format(self.selected_points_id))
                     else:
                         # avoid repeated points
@@ -343,7 +344,6 @@ class AtlasAnnotationTool(QWidget):
         self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
         self.upperScene.canvas.update()
 
-
     def btn_crop_clicked(self):
         '''
         When crop is clicked
@@ -352,16 +352,7 @@ class AtlasAnnotationTool(QWidget):
         3. Remove the cropped area
         4. Render the result in the lower scene
         '''
-        # test coords: [12270, 11558, 29847]
-        # test coords: [34610, 13461, 11121]
-        # test coords: [13783, 12782, 13432]
-        # test coords (door): [3400, 189, 4289]
-        # test coords (door): [3877, 1345, 14032]
-        # DEMO: test coords (door): [3877, 105, 5241]
-
-
         # accessing QLineEdit inputs: https://stackoverflow.com/questions/3016974/how-to-get-text-in-qlineedit-when-qpushbutton-is-pressed-in-a-string
-
         coords = {"X": self.x_coord.text(), "Y": self.y_coord.text(), "Z": self.z_coord.text()}
         if not all(coords.values()):
             missing = ""
@@ -386,8 +377,6 @@ class AtlasAnnotationTool(QWidget):
                 self.current_result_point_indices = values
             except Exception as e:
                 self.writeMessage(str(e))
-
-        # print("CLICKED: ", type(self.x_coord.text()), self.y_coord.text(), self.z_coord.text())
 
     ####### UTILITIES FUNCTIONS #######
 
