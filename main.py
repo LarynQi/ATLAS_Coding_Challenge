@@ -48,6 +48,9 @@ class AtlasAnnotationTool(QWidget):
         self.setOnClickListener()
         self.populateSegmentList()
 
+        # keep track of selected points
+        self.selected = {}
+
         # Demo
         # self.addSegmentationItems(["Placeholder 1", "Placeholder 2"])
         # pcd = o3d.io.read_point_cloud("./data/scene.ply")
@@ -147,6 +150,8 @@ class AtlasAnnotationTool(QWidget):
             self.writeMessage(str(e))
         self.writeMessage("Selected Points is cleared")
         self.selected_points_id = []
+        # clear selected points
+        self.clearSelected()
 
     def btn_floodfill_cancel_clicked(self):
         '''
@@ -154,10 +159,12 @@ class AtlasAnnotationTool(QWidget):
         1. clear all selected points
         2. clear the lower scene
         '''
-        self.writeMessage("Selected Segmentation Cancelled".format(len(self.selected_points_id)))
+        # self.writeMessage("Selected Segmentation Cancelled".format(len(self.selected_points_id)))
+        self.writeMessage("Selected Segmenation Cancelled")
         self.selected_points_id = []
         self.current_result_point_indices = []
         self.lowerScene.clear()
+        self.clearSelected()
 
     def btn_delete_clicked(self):
         print("NOT IMPLEMENTED YET")
@@ -224,7 +231,8 @@ class AtlasAnnotationTool(QWidget):
         ids = ids.reshape(-1, 4)
         ids = np.divide(ids, 255, dtype=np.float32)
         # connect events
-        if event.button == 1 and self.distance_traveled(event.trail()) <= 2:
+        distance = self.distance_traveled(event.trail())
+        if event.button == 1 and distance <= 2:
             pos = self.upperScene.canvas.transforms.canvas_transform.map(event.pos)
             try:
                 self.upperScene.marker.update_gl_state(blend=False)
@@ -237,6 +245,7 @@ class AtlasAnnotationTool(QWidget):
                                                     bgcolor=vispy.color.ColorArray('red'))
                 self.upperScene.canvas.update()
                 # TODO make the dots appear
+
             finally:
                 self.upperScene.marker.update_gl_state(blend=True)
                 self.upperScene.marker.antialias = 1
@@ -255,11 +264,35 @@ class AtlasAnnotationTool(QWidget):
             if idx > 0:
                 try:
                     points[idx]
-                    self.selected_points_id.append(idx)  # TODO how to you not add a point if it is index out of range
-                    # p1.set_data(points, edge_color=colors, face_color=colors, size=2)
-                    self.writeMessage("Selected Points {}".format(self.selected_points_id))
+                    if idx not in self.selected:
+                        self.selected_points_id.append(idx)  # TODO how to you not add a point if it is index out of range
+                        # p1.set_data(points, edge_color=colors, face_color=colors, size=2)
+                        
+                        # save the original color of the point
+                        self.selected[idx] = np.ndarray.copy(colors[idx])
+                        # set the selected point's color to red
+                        colors[idx] = (1, 0, 0)
+                        self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
+                        self.upperScene.canvas.update()
+
+                        self.writeMessage("Selected Points {}".format(self.selected_points_id))
+                        print("Selected Points: ", self.selected_points_id)
+                    else:
+                        self.writeMessage("Please select a distinct point.")
                 except IndexError:
                     self.writeMessage("The point {} is not in the point cloud".format(idx))
+
+    def clearSelected(self):
+        # revert all selected points back to their original color
+        pcd = self.upperScene.pcd
+        points = np.asarray(pcd.points)
+        colors = np.asarray(pcd.colors)
+        for pt in self.selected:
+            colors[pt] = self.selected[pt]
+        self.selected = {}
+        self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
+        self.upperScene.canvas.update()
+
 
     ####### UTILITIES FUNCTIONS #######
 
@@ -278,7 +311,11 @@ class AtlasAnnotationTool(QWidget):
         Return the total amount of pixels traveled in a sequence of pixel
         `positions`, using Manhattan distances for simplicity.
         """
-        return np.sum(np.abs(np.diff(positions, axis=0)))
+        try:
+            return np.sum(np.abs(np.diff(positions, axis=0)))
+        except Exception as e:
+            # print("Caught")
+            return 0
 
     def addSegmentationItem(self, segment):
         self.segmentations.append(segment)
