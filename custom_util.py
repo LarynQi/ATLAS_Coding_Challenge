@@ -40,8 +40,23 @@ def crop_remove(pcd, points_to_delete):
     points = np.asarray(pcd.points)
     colors = np.asarray(pcd.colors)
 
-    updated_points = np.delete(points, points_to_delete, axis=0)
-    updated_color = np.delete(colors, points_to_delete, axis=0)
+    # https://numpy.org/doc/stable/reference/generated/numpy.delete.html
+    temp = points_to_delete[:]
+    temp.remove(max(points_to_delete))
+    delete1 = np.s_[min(points_to_delete):max(temp)]
+    delete2 = np.s_[max(temp):max(points_to_delete)]
+    delete3 = np.s_[min(points_to_delete):max(points_to_delete)]
+
+    # updated_points = np.delete(points, points_to_delete, axis=0)
+    updated_points = np.delete(points, delete1, axis=0)
+    updated_points = np.delete(updated_points, delete2, axis=0)
+    updated_points = np.delete(updated_points, delete3, axis=0)
+
+    # updated_color = np.delete(colors, points_to_delete, axis=0)
+    updated_color = np.delete(colors, delete1, axis=0)
+    updated_color = np.delete(updated_color, delete2, axis=0)
+    updated_color = np.delete(updated_color, delete3, axis=0)
+
     pcd_updated = o3d.geometry.PointCloud()
     pcd_updated.points = o3d.utility.Vector3dVector(updated_points)
     pcd_updated.colors = o3d.utility.Vector3dVector(updated_color)
@@ -255,3 +270,31 @@ def prompt_saving():
     return {"type_class": combo_box.currentText(),
             "seg_name": line_edit.text()}
 
+def prompt_deleting(segments):
+    dialog = QDialog()
+    form = QFormLayout(dialog)
+    q_dialog_buttonbox = QDialogButtonBox()
+    btn_ok = q_dialog_buttonbox.addButton(QDialogButtonBox.Ok)
+    btn_cancel = q_dialog_buttonbox.addButton(QDialogButtonBox.Cancel)
+    line_edit = QLineEdit()
+    form.addRow(QLabel("Segment Name:"), line_edit)
+    form.addRow(q_dialog_buttonbox)
+
+    failed = False
+    def btn_ok_clicked():
+        nonlocal failed
+        if line_edit.text() in segments:
+            dialog.close()
+        else:
+            if not failed:
+                failed = True
+                form.addRow(QLabel("Invalid Segment Name"))
+
+    def btn_cancel_clicked():
+        dialog.close()
+
+    btn_ok.clicked.connect(btn_ok_clicked)
+
+    btn_cancel.clicked.connect(btn_cancel_clicked)
+    dialog.exec_()
+    return line_edit.text()

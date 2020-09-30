@@ -1,10 +1,11 @@
 import numpy as np
 from PyQt5 import uic
 from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QLineEdit
 import sys
 from vispy import scene
 import vispy.scene
-from custom_util import prompt_saving, floodfill, crop_reserve, crop_remove, FloodfillError, Scene
+from custom_util import prompt_saving, prompt_deleting, floodfill, crop_reserve, crop_remove, FloodfillError, Scene
 from models import Segment
 import os
 import open3d as o3d
@@ -67,7 +68,8 @@ class AtlasAnnotationTool(QWidget):
         self.btn_common_save.clicked.connect(self.btn_save_clicked)
         self.btn_common_delete.clicked.connect(self.btn_delete_clicked)
         self.segmentation_list.itemDoubleClicked.connect(self.segmentation_list_item_double_clicked)
-
+        # crop button
+        self.btn_crop.clicked.connect(self.btn_crop_clicked)
 
     def wireWidgets(self):
         # scene wiring
@@ -89,6 +91,14 @@ class AtlasAnnotationTool(QWidget):
         self.btn_floodfill_done = tab_floodfill.widget(0).children()[1]
         self.btn_floodfill_cancel = tab_floodfill.widget(0).children()[2]
 
+        # Coordinate Crop wiring
+        tab_crop = self.base_form.system_mode_layout.itemAt(0).widget()
+        self.btn_crop = tab_crop.widget(1).children()[0].children()[5]
+        self.x_coord = tab_crop.widget(1).children()[0].children()[2]
+        self.y_coord = tab_crop.widget(1).children()[0].children()[3]
+        self.z_coord = tab_crop.widget(1).children()[0].children()[4]
+
+        # QT Designer reference: https://doc.qt.io/qtcreator/creator-using-qt-designer.html
 
     def setUpDisplay(self):
         self.upperScene.canvas = vispy.scene.SceneCanvas(keys='interactive', show=True)
@@ -149,7 +159,8 @@ class AtlasAnnotationTool(QWidget):
         except Exception as e:
             self.writeMessage(str(e))
         self.writeMessage("Selected Points is cleared")
-        self.selected_points_id = []
+        # added in AtlasAnnotationTool.clearSelected
+        # self.selected_points_id = []
         # clear selected points
         self.clearSelected()
 
@@ -161,13 +172,30 @@ class AtlasAnnotationTool(QWidget):
         '''
         # self.writeMessage("Selected Segmentation Cancelled".format(len(self.selected_points_id)))
         self.writeMessage("Selected Segmenation Cancelled")
-        self.selected_points_id = []
+        # added in AtlasAnnotationTool.clearSelected
+        # self.selected_points_id = []
         self.current_result_point_indices = []
         self.lowerScene.clear()
         self.clearSelected()
 
     def btn_delete_clicked(self):
-        print("NOT IMPLEMENTED YET")
+        name = prompt_deleting([s.segment_name for s in self.segmentations])
+        import json
+        with open(self.data_fname, mode='r') as f:
+            segmentations = json.load(f)
+        a = []
+        for segment in segmentations:
+            segment_dict = json.loads(segment)
+            seg = Segment(**segment_dict)
+            if seg.segment_name != name:
+                entry = seg.json()
+                a.append(entry)
+            else:
+                seg_id = seg.id
+                self.segmentations.remove(seg)
+                self.segmentation_list.takeItem(seg_id)
+        with open(self.data_fname, mode='w') as f:
+            f.write(json.dumps(a, indent=2))
 
     def btn_save_clicked(self):
         '''
@@ -268,7 +296,7 @@ class AtlasAnnotationTool(QWidget):
                         self.selected_points_id.append(idx)  # TODO how to you not add a point if it is index out of range
                         # p1.set_data(points, edge_color=colors, face_color=colors, size=2)
                         
-                        # save the original color of the point
+                        # save the original color of the point (https://numpy.org/doc/stable/reference/generated/numpy.ndarray.copy.html)
                         self.selected[idx] = np.ndarray.copy(colors[idx])
                         # set the selected point's color to red
                         colors[idx] = (1, 0, 0)
@@ -290,9 +318,43 @@ class AtlasAnnotationTool(QWidget):
         for pt in self.selected:
             colors[pt] = self.selected[pt]
         self.selected = {}
+        self.selected_points_id = []
         self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
         self.upperScene.canvas.update()
 
+
+    def btn_crop_clicked(self):
+        # test coords: [12270, 11558, 29847]
+        # test coords: [34610, 13461, 11121]
+
+        # accessing QLineEdit inputs: https://stackoverflow.com/questions/3016974/how-to-get-text-in-qlineedit-when-qpushbutton-is-pressed-in-a-string
+
+        coords = {"X": self.x_coord.text(), "Y": self.y_coord.text(), "Z": self.z_coord.text()}
+        if not all(coords.values()):
+            missing = ""
+            for k in coords:
+                if not coords[k]:
+                    missing += k + ", "
+            missing = missing[:len(missing) - 2]
+            self.writeMessage("Missing coordinate(s): " + missing)
+        else:
+            values = []
+            for k in coords:
+                try:
+                    values.append(int(coords[k]))
+                except ValueError:
+                    self.writeMessage("Coordinates must be integers.")
+                    return
+            try:
+                pcd = self.upperScene.pcd
+                points = np.asarray(pcd.points)
+                new_pcd = crop_remove(pcd, values)
+                self.lowerScene.render(new_pcd)
+                self.current_result_point_indices = values
+            except Exception as e:
+                self.writeMessage(str(e))
+
+        # print("CLICKED: ", type(self.x_coord.text()), self.y_coord.text(), self.z_coord.text())
 
     ####### UTILITIES FUNCTIONS #######
 
@@ -319,6 +381,8 @@ class AtlasAnnotationTool(QWidget):
 
     def addSegmentationItem(self, segment):
         self.segmentations.append(segment)
+        # todo: user edits data_file_name manually
+        # self.segmentation_names.append(segment["data_file_name"])
         self.segmentation_list.addItem("{} | {} | {}".format(segment.id, segment.segment_name, segment.type_class))
 
     def writeMessage(self, message):

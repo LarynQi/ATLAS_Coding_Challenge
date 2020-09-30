@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1377</width>
-    <height>813</height>
+    <height>778</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -86,10 +86,69 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="your_function">
+       <widget class="QWidget" name="coordinate_crop">
         <attribute name="title">
-         <string>Your Function</string>
+         <string>Coordinate Crop</string>
         </attribute>
+        <widget class="QWidget" name="formLayoutWidget">
+         <property name="geometry">
+          <rect>
+           <x>150</x>
+           <y>70</y>
+           <width>249</width>
+           <height>141</height>
+          </rect>
+         </property>
+         <layout class="QFormLayout" name="formLayout">
+          <item row="0" column="1">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Enter in a (X,Y,Z) coordinate (must be integers)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="2">
+           <widget class="QLineEdit" name="lineEdit">
+            <property name="toolTip">
+             <string>int</string>
+            </property>
+            <property name="placeholderText">
+             <string>X coordinate</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QLineEdit" name="lineEdit_2">
+            <property name="toolTip">
+             <string>int</string>
+            </property>
+            <property name="placeholderText">
+             <string>Y coordinate</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <widget class="QLineEdit" name="lineEdit_3">
+            <property name="toolTip">
+             <string>int</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="placeholderText">
+             <string>Z coordinate</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0" colspan="2">
+           <widget class="QPushButton" name="pushButton">
+            <property name="text">
+             <string>Crop</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </widget>
       </widget>
      </item>
@@ -155,7 +214,11 @@
    <item row="2" column="1">
     <layout class="QVBoxLayout" name="segmentation_layout">
      <item>
-      <widget class="QListWidget" name="listWidget"/>
+      <widget class="QListWidget" name="listWidget">
+       <property name="toolTip">
+        <string>int</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
