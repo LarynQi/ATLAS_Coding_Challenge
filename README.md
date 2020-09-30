@@ -1,4 +1,24 @@
 # ATLAS_Coding_Challenge
+## Changelog - Laryn Qi
+- **Main Task**: *`AtlasAnnotationTool.__init__`, `AtlasAnnotationTool.topCanvasClicked`, and `AtlasAnnotationTool.clearSelected` in `main.py`*
+  -  Added an instance attribute, `selected,` in the constructor to keep track of selected points and their original colors.
+  -  In `AtlasAnnotationTool.topCanvasClicked`, we store the a copy of the selected point's original color. Then, its color is changed to be red so that it stands out.
+  -  Now, whenever the user clears their selected floodfill points (either by clicking "Done" or "Cancel"), the selected points revert back to their original colors.
+  - `AtlasAnnotationTool.topCanvasClicked` now ignores repeated points.
+  - Fixed a bug in `distance_traveled` to handle null inputs
+- **Stretch Goal 1 (Coordinate Crop)**: *`main.ui`, `AtlasAnnotationTool.wireWidgets`, `AtlasAnnotationTool.setOnClickListener`, `AtlasAnnotationTool.btn_crop_clicked`, and `crop_remove` (in `custom_util.py`)*
+  - Using QT Designer, updated the "Your Function" tab in `main.ui` to contain 3 input fields for the X, Y, and Z coordinates and a "Crop" button. Renamed this tab to "Coordinate Crop."
+  - Properly linked the new UI elements to the backend in `AtlasAnnotationTool.wireWidgets` and `AtlasAnnotationTool.setOnClickListener`.
+  - `AtlasAnnotationTool.btn_crop_clicked` checks for malformed inputs and then runs `crop_remove` and renders the result.
+  - Modified the `crop_remove` algorithm to cut out the desired region from the pointcloud.
+- **Stretch Goal 2 (Deletion)**: *`prompt_deleting` (in `custom_util.py`) and `AtlasAnnotationTool.btn_delete_clicked`*
+  - Added new prompt that receives the name of the save/segment the user wishes to delete.
+    - Properly handles invalid segment names.
+  - `AtlasAnnotationTool.btn_delete_clicked` deletes the save in the frontend and backend.
+    - Properly handles reordering the remaining saves.
+    - Deletes the .json if no saves remain.
+
+
 ## I. Get Started
 #### A. Basics
 We do expect you to be familiar with Git. Please create your own repository for this coding challenge.
