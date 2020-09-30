@@ -11,7 +11,7 @@
   - Properly linked the new UI elements to the backend in `AtlasAnnotationTool.wireWidgets` and `AtlasAnnotationTool.setOnClickListener`.
   - `AtlasAnnotationTool.btn_crop_clicked` checks for malformed inputs and then runs `crop_remove` and renders the result.
   - Modified the `crop_remove` algorithm to cut out the desired region from the pointcloud.
-  - To see a demo of this crop functionality, load `scene.ply`, enter in `X = 3877`, `Y = 105`, `Z = 5241`, and click "Crop"
+  - **To see a demo of this crop functionality, load `scene.ply`, enter in `X = 3877`, `Y = 105`, `Z = 5241`, and click "Crop"**
     - You should see the brown wall being cropped out in the lower canvas.
 - **Stretch Goal 2 (Deletion)**: *`prompt_deleting` (in `custom_util.py`) and `AtlasAnnotationTool.btn_delete_clicked`*
   - Added new prompt that receives the name of the save/segment the user wishes to delete.
