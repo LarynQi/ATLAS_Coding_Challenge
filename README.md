@@ -13,6 +13,7 @@
   - Modified the `crop_remove` algorithm to cut out the desired region from the pointcloud.
   - **To see a demo of this crop functionality, load `scene.ply`, enter in `X = 3877`, `Y = 105`, `Z = 5241`, and click "Crop"**
     - You should see the brown wall being cropped out in the lower canvas.
+    ![coordinate_crop](./screenshots/coordinate_crop.png "coordinate_crop.png")
 - **Stretch Goal 2 (Deletion)**: *`prompt_deleting` (in `custom_util.py`) and `AtlasAnnotationTool.btn_delete_clicked`*
   - Added new prompt that receives the name of the save/segment the user wishes to delete.
     - Properly handles invalid segment names.
