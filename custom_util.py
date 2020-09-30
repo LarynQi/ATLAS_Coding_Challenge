@@ -280,6 +280,7 @@ def prompt_deleting(segments):
     form.addRow(QLabel("Segment Name:"), line_edit)
     form.addRow(q_dialog_buttonbox)
 
+    # Check that the input save name exists
     failed = False
     def btn_ok_clicked():
         nonlocal failed

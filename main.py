@@ -179,30 +179,52 @@ class AtlasAnnotationTool(QWidget):
         self.clearSelected()
 
     def btn_delete_clicked(self):
+        '''
+        When delete is clicked
+        1. Prompt the user for the name of the save/object
+        2. Delete the object from the segmentation_list
+        3. Delete the object from segments.json
+        4. Reorder the remaining objects
+        5. Delete segments.json if there are no remaining saves
+        '''
         name = prompt_deleting([s.segment_name for s in self.segmentations])
         import json
         with open(self.data_fname, mode='r') as f:
             segmentations = json.load(f)
-        a = []
+        data = []
+        removed_id = len(segmentations)
         for segment in segmentations:
             segment_dict = json.loads(segment)
             seg = Segment(**segment_dict)
             if seg.segment_name != name:
+                if seg.id > removed_id:
+                    seg.id -= 1
+                    # https://doc.qt.io/qtforpython/PySide2/QtWidgets/QListWidgetItem.html
+                    self.segmentation_list.item(seg.id).setText("{} | {} | {}".format(seg.id, seg.segment_name, seg.type_class))
+                    self.segmentations[seg.id].id -= 1
                 entry = seg.json()
-                a.append(entry)
+                data.append(entry)
             else:
-                seg_id = seg.id
-                self.segmentations.remove(seg)
-                self.segmentation_list.takeItem(seg_id)
-        with open(self.data_fname, mode='w') as f:
-            f.write(json.dumps(a, indent=2))
+                self.segmentations.pop(seg.id)
+                # https://doc.qt.io/archives/qt-4.8/qlistwidget.html#takeItem
+                self.segmentation_list.takeItem(seg.id)
+                removed_id = seg.id
+
+        ### DEBUGGING ###
+        # print("NAMES:", [s.segment_name for s in self.segmentations])
+        # print("IDS:", [s.id for s in self.segmentations])
+
+        if not data:
+            os.remove(self.data_fname)
+        else:
+            with open(self.data_fname, mode='w') as f:
+                f.write(json.dumps(data, indent=2))
 
     def btn_save_clicked(self):
         '''
         When save is clicked
         1. Prompt the user for the name and type of the object
         2. save the object
-
         '''
         data = prompt_saving()
         if len(self.current_result_point_indices) == 0:
@@ -272,8 +294,6 @@ class AtlasAnnotationTool(QWidget):
                                                      2 * 10 + 1),
                                                     bgcolor=vispy.color.ColorArray('red'))
                 self.upperScene.canvas.update()
-                # TODO make the dots appear
-
             finally:
                 self.upperScene.marker.update_gl_state(blend=True)
                 self.upperScene.marker.antialias = 1
@@ -297,15 +317,16 @@ class AtlasAnnotationTool(QWidget):
                         # p1.set_data(points, edge_color=colors, face_color=colors, size=2)
                         
                         # save the original color of the point (https://numpy.org/doc/stable/reference/generated/numpy.ndarray.copy.html)
+                        # need a copy
                         self.selected[idx] = np.ndarray.copy(colors[idx])
                         # set the selected point's color to red
                         colors[idx] = (1, 0, 0)
                         self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
                         self.upperScene.canvas.update()
 
-                        self.writeMessage("Selected Points {}".format(self.selected_points_id))
-                        print("Selected Points: ", self.selected_points_id)
+                        self.writeMessage("Selected Points: {}".format(self.selected_points_id))
                     else:
+                        # avoid repeated points
                         self.writeMessage("Please select a distinct point.")
                 except IndexError:
                     self.writeMessage("The point {} is not in the point cloud".format(idx))
@@ -324,8 +345,20 @@ class AtlasAnnotationTool(QWidget):
 
 
     def btn_crop_clicked(self):
+        '''
+        When crop is clicked
+        1. Get the selected coordinates
+        2. Check for malformed inputs
+        3. Remove the cropped area
+        4. Render the result in the lower scene
+        '''
         # test coords: [12270, 11558, 29847]
         # test coords: [34610, 13461, 11121]
+        # test coords: [13783, 12782, 13432]
+        # test coords (door): [3400, 189, 4289]
+        # test coords (door): [3877, 1345, 14032]
+        # DEMO: test coords (door): [3877, 105, 5241]
+
 
         # accessing QLineEdit inputs: https://stackoverflow.com/questions/3016974/how-to-get-text-in-qlineedit-when-qpushbutton-is-pressed-in-a-string
 
@@ -376,7 +409,7 @@ class AtlasAnnotationTool(QWidget):
         try:
             return np.sum(np.abs(np.diff(positions, axis=0)))
         except Exception as e:
-            # print("Caught")
+            # print("CAUGHT")
             return 0
 
     def addSegmentationItem(self, segment):
