@@ -60,6 +60,7 @@ class AtlasAnnotationTool(QWidget):
         app.exec_()
 
     ####### SET UP FUNCTIONS #######
+
     def setOnClickListener(self):
         self.btn_floodfill_done.clicked.connect(self.btn_floodfill_done_clicked)
         self.btn_floodfill_cancel.clicked.connect(self.btn_floodfill_cancel_clicked)
@@ -105,6 +106,7 @@ class AtlasAnnotationTool(QWidget):
         self.lowerScene.canvas = vispy.scene.SceneCanvas(keys='interactive', show=True)
 
     ####### ON CLICK FUNCTIONS #######
+
     def segmentation_list_item_double_clicked(self):
         '''
         When an item is double clicked, read that file and render it onto the upper scene
@@ -150,6 +152,8 @@ class AtlasAnnotationTool(QWidget):
         2. get the surface that needs to be cropped
         3. render the result in the lower scene
         '''
+        # revert to original colors
+        self.clearSelected()
         try:
             surface_to_crop = floodfill(self.selected_points_id, self.upperScene.pcd)
             self.current_result_point_indices = surface_to_crop
@@ -158,11 +162,9 @@ class AtlasAnnotationTool(QWidget):
 
         except Exception as e:
             self.writeMessage(str(e))
-        self.writeMessage("Selected Points is cleared")
-        # handled in AtlasAnnotationTool.clearSelected
-        # self.selected_points_id = []
-        # clear selected points
-        self.clearSelected()
+        self.writeMessage("Selected Points Cleared")
+        self.selected_points_id = []
+
 
     def btn_floodfill_cancel_clicked(self):
         '''
@@ -170,10 +172,8 @@ class AtlasAnnotationTool(QWidget):
         1. clear all selected points
         2. clear the lower scene
         '''
-        # self.writeMessage("Selected Segmentation Cancelled".format(len(self.selected_points_id)))
         self.writeMessage("Selected Segmenation Cancelled")
-        # handled in AtlasAnnotationTool.clearSelected
-        # self.selected_points_id = []
+        self.selected_points_id = []
         self.current_result_point_indices = []
         self.lowerScene.clear()
         self.clearSelected()
@@ -187,36 +187,47 @@ class AtlasAnnotationTool(QWidget):
         4. Reorder the remaining objects
         5. Delete segments.json if there are no remaining saves
         '''
+        # prompt the user for a save to delete and pass in the available segment_name's
         name = prompt_deleting([s.segment_name for s in self.segmentations])
         import json
         with open(self.data_fname, mode='r') as f:
             segmentations = json.load(f)
+        # data to be saved in segments.json
         data = []
+
+        # initialize removed_id to be an out-of-bounds value (will be updated in the loop)
         removed_id = len(segmentations)
+
         for segment in segmentations:
             segment_dict = json.loads(segment)
             seg = Segment(**segment_dict)
             if seg.segment_name != name:
+
+                # reorder remaining Segments if deletion has already been performed
                 if seg.id > removed_id:
                     seg.id -= 1
+
                     # https://doc.qt.io/qtforpython/PySide2/QtWidgets/QListWidgetItem.html
                     self.segmentation_list.item(seg.id).setText("{} | {} | {}".format(seg.id, seg.segment_name, seg.type_class))
+
+                    # save the new id in the backend
                     self.segmentations[seg.id].id -= 1
                 entry = seg.json()
                 data.append(entry)
             else:
+                # remove the selected Segment from backend
                 self.segmentations.pop(seg.id)
-                # https://doc.qt.io/archives/qt-4.8/qlistwidget.html#takeItem
+
+                # remove the selected Segment from frontend (https://doc.qt.io/archives/qt-4.8/qlistwidget.html#takeItem)
                 self.segmentation_list.takeItem(seg.id)
+
+                # save the removed_id to reorder subsequent Segments
                 removed_id = seg.id
 
-        ### DEBUGGING ###
-
-        # print("NAMES:", [s.segment_name for s in self.segmentations])
-        # print("IDS:", [s.id for s in self.segmentations])
-
+        # delete segments.json if no Segments remain
         if not data:
             os.remove(self.data_fname)
+        # otherwise, save the remaining Segments
         else:
             with open(self.data_fname, mode='w') as f:
                 f.write(json.dumps(data, indent=2))
@@ -268,7 +279,7 @@ class AtlasAnnotationTool(QWidget):
         When the top canvas is clicked
         1. rotate the scene if necessary
         2. record the point clicked if necessary
-        3. show the points clicked (STILL NEED TO IMPLEMENT)
+        3. show the points clicked
         :param event: event that the top canvas is clicked.
         :return:
         '''
@@ -313,6 +324,7 @@ class AtlasAnnotationTool(QWidget):
             if idx > 0:
                 try:
                     points[idx]
+                    # restrict repeated points
                     if idx not in self.selected:
                         self.selected_points_id.append(idx)
                         # p1.set_data(points, edge_color=colors, face_color=colors, size=2)
@@ -322,27 +334,15 @@ class AtlasAnnotationTool(QWidget):
 
                         # set the selected point's color to red
                         colors[idx] = (1, 0, 0)
-                        
+
+                        # re-render with updated colors
                         self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
                         self.upperScene.canvas.update()
                         self.writeMessage("Selected Points: {}".format(self.selected_points_id))
                     else:
-                        # avoid repeated points
                         self.writeMessage("Please select a distinct point.")
                 except IndexError:
                     self.writeMessage("The point {} is not in the point cloud".format(idx))
-
-    def clearSelected(self):
-        # revert all selected points back to their original color
-        pcd = self.upperScene.pcd
-        points = np.asarray(pcd.points)
-        colors = np.asarray(pcd.colors)
-        for pt in self.selected:
-            colors[pt] = self.selected[pt]
-        self.selected = {}
-        self.selected_points_id = []
-        self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
-        self.upperScene.canvas.update()
 
     def btn_crop_clicked(self):
         '''
@@ -380,6 +380,19 @@ class AtlasAnnotationTool(QWidget):
 
     ####### UTILITIES FUNCTIONS #######
 
+    def clearSelected(self):
+        """
+        Recolor all selected points back to their original colors.
+        """
+        pcd = self.upperScene.pcd
+        points = np.asarray(pcd.points)
+        colors = np.asarray(pcd.colors)
+        for pt in self.selected:
+            colors[pt] = self.selected[pt]
+        self.selected = {}
+        self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
+        self.upperScene.canvas.update()
+
     def openFileNamesDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -398,13 +411,10 @@ class AtlasAnnotationTool(QWidget):
         try:
             return np.sum(np.abs(np.diff(positions, axis=0)))
         except Exception as e:
-            # print("CAUGHT")
             return 0
 
     def addSegmentationItem(self, segment):
         self.segmentations.append(segment)
-        # todo: user edits data_file_name manually
-        # self.segmentation_names.append(segment["data_file_name"])
         self.segmentation_list.addItem("{} | {} | {}".format(segment.id, segment.segment_name, segment.type_class))
 
     def writeMessage(self, message):

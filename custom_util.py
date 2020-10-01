@@ -283,6 +283,7 @@ def prompt_deleting(segments):
     # Check that the input save name exists
     failed = False
     def btn_ok_clicked():
+        # Nonlocal variable to avoid displaying multiple error messages
         nonlocal failed
         if line_edit.text() in segments:
             dialog.close()
