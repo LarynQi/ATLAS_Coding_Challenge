@@ -3,6 +3,7 @@
 - **Main Task**: *`AtlasAnnotationTool.__init__`, `AtlasAnnotationTool.topCanvasClicked`, and `AtlasAnnotationTool.clearSelected` in `main.py`*
   -  Added an instance attribute, `selected,` in the constructor to keep track of selected points and their original colors.
   -  In `AtlasAnnotationTool.topCanvasClicked`, we store the a copy of the selected point's original color. Then, its color is changed to be red so that it stands out.
+    ![selected_zoom](./screenshots/selected_zoom.png "selected_zoom.png")
   -  Now, whenever the user clears their selected floodfill points (either by clicking "Done" or "Cancel"), the selected points revert back to their original colors.
   - `AtlasAnnotationTool.topCanvasClicked` now ignores repeated points.
   - Fixed a bug in `distance_traveled` to handle null inputs
@@ -20,7 +21,7 @@
   - `AtlasAnnotationTool.btn_delete_clicked` deletes the save in the frontend and backend.
     - Properly handles reordering the remaining saves.
     - Deletes the .json if no saves remain.
-
+    ![delete_fail](./screenshots/delete_fail.png "delete_fail.png")
 
 ## I. Get Started
 #### A. Basics
