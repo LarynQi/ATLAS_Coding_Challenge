@@ -23,6 +23,11 @@
     - Deletes the .json if no saves remain.
     ![delete_fail](./screenshots/delete_fail.png "delete_fail.png")
 
+### References - Laryn Qi
+- [Open3D](http://www.open3d.org/docs/release/tutorial/Basic/pointcloud.html) Point Cloud for background information
+- [NumPy](https://numpy.org/doc/) for edits to `crop_remove` and array copying for coloring
+- [Qt for Python](https://doc.qt.io/qtforpython/) for making UI changes
+
 ## I. Get Started
 #### A. Basics
 We do expect you to be familiar with Git. Please create your own repository for this coding challenge.
