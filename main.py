@@ -51,6 +51,8 @@ class AtlasAnnotationTool(QWidget):
 
         # keep track of selected points
         self.selected = {}
+        # keep track of size of points
+        self.sizes = []
 
         # Demo
         # self.addSegmentationItems(["Placeholder 1", "Placeholder 2"])
@@ -286,6 +288,10 @@ class AtlasAnnotationTool(QWidget):
         pcd = self.upperScene.pcd
         points = np.asarray(pcd.points)
         colors = np.asarray(pcd.colors)
+        # prepare an array of point sizes
+        if not self.sizes:
+            self.sizes = [self.point_size for _ in range(len(points))]
+        sizes = np.asarray(self.sizes)
         # axis = scene.visuals.XYZAxis(parent=self.upper.scene)
 
         # prepare list of unique colors needed for picking
@@ -299,7 +305,7 @@ class AtlasAnnotationTool(QWidget):
             try:
                 self.upperScene.marker.update_gl_state(blend=False)
                 self.upperScene.marker.antialias = 0
-                self.upperScene.marker.set_data(points, edge_color=ids, face_color=ids, size=self.point_size)
+                self.upperScene.marker.set_data(points, edge_color=ids, face_color=ids, size=sizes)
                 img = self.upperScene.canvas.render((pos[0] - 2,
                                                      pos[1] - 2,
                                                      2 * 10 + 1,
@@ -309,7 +315,7 @@ class AtlasAnnotationTool(QWidget):
             finally:
                 self.upperScene.marker.update_gl_state(blend=True)
                 self.upperScene.marker.antialias = 1
-                self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
+                self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=sizes)
             # We pick the pixel directly under the click, unless it is
             # zero, in which case we look for the most common nonzero
             # pixel value in a square region centered on the click.
@@ -335,8 +341,12 @@ class AtlasAnnotationTool(QWidget):
                         # set the selected point's color to red
                         colors[idx] = (1, 0, 0)
 
-                        # re-render with updated colors
-                        self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
+                        # increase size of selected points
+                        sizes[idx] *= 3
+                        self.sizes[idx] *= 3
+
+                        # re-render with updated colors and sizes
+                        self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=sizes)
                         self.upperScene.canvas.update()
                         self.writeMessage("Selected Points: {}".format(self.selected_points_id))
                     else:
@@ -383,6 +393,7 @@ class AtlasAnnotationTool(QWidget):
     def clearSelected(self):
         """
         Recolor all selected points back to their original colors.
+        Rever selected points back to regular size.
         """
         pcd = self.upperScene.pcd
         points = np.asarray(pcd.points)
@@ -390,6 +401,7 @@ class AtlasAnnotationTool(QWidget):
         for pt in self.selected:
             colors[pt] = self.selected[pt]
         self.selected = {}
+        self.sizes = []
         self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
         self.upperScene.canvas.update()
 
