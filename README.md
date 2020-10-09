@@ -1,10 +1,10 @@
 # ATLAS_Coding_Challenge
 ## Changelog - Laryn Qi
 - **Main Task**: *`AtlasAnnotationTool.__init__`, `AtlasAnnotationTool.topCanvasClicked`, and `AtlasAnnotationTool.clearSelected` in `main.py`*
-  -  Added an instance attribute, `selected,` in the constructor to keep track of selected points and their original colors.
-  -  In `AtlasAnnotationTool.topCanvasClicked`, we store the a copy of the selected point's original color. Then, its color is changed to be red so that it stands out.
-    ![selected_zoom](./screenshots/selected_zoom.png "selected_zoom.png")
-  -  Now, whenever the user clears their selected floodfill points (either by clicking "Done" or "Cancel"), the selected points revert back to their original colors.
+  -  Added two instance attributes, `selected` and `sizes`, in the constructor to keep track of selected points and their original colors as well as point sizes.
+  -  In `AtlasAnnotationTool.topCanvasClicked`, we store the a copy of the selected point's original color. Then, its color is changed to be red so that it stands out. Selected points also have their size magnified by 3x.
+    ![selected_enlarged](./screenshots/selected_enlarged.png "selected_enlarged.png")
+  -  Now, whenever the user clears their selected floodfill points (either by clicking "Done" or "Cancel"), the selected points revert back to their original colors and size.
   - `AtlasAnnotationTool.topCanvasClicked` now ignores repeated points.
   - Fixed a bug in `distance_traveled` to handle null inputs
 - **Stretch Goal 1 (Coordinate Crop)**: *`main.ui`, `AtlasAnnotationTool.wireWidgets`, `AtlasAnnotationTool.setOnClickListener`, `AtlasAnnotationTool.btn_crop_clicked`, and `crop_remove` (in `custom_util.py`)*
@@ -27,6 +27,7 @@
 - [Open3D](http://www.open3d.org/docs/release/tutorial/Basic/pointcloud.html) Point Cloud for background information
 - [NumPy](https://numpy.org/doc/) for edits to `crop_remove` and array copying for coloring
 - [Qt for Python](https://doc.qt.io/qtforpython/) for making UI changes
+- [VisPy](http://vispy.org/visuals.html) for modifying and displaying the points
 
 ## I. Get Started
 #### A. Basics
